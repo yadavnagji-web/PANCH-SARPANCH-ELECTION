@@ -1,0 +1,6 @@
+{
+  "name": "वार्ड पंच चुनाव पैम्फलेट व मतपत्र निर्माता",
+  "description": "वार्ड पंच एवं पंचायत चुनाव प्रचार पर्चा (Pamphlet) व मतपत्र / EVM बैलेट तुरंत डिजाइन व प्रिंट करने का आसान टूल।",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
