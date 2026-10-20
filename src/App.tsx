@@ -18,6 +18,9 @@ import {
   BookOpen,
   X,
   FileText,
+  Lock,
+  Unlock,
+  RefreshCw,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { exportElementAsImage } from './utils/exportImage.ts';
@@ -50,6 +53,11 @@ export default function App() {
   const [savedAlert, setSavedAlert] = useState(false);
   const [printFeedback, setPrintFeedback] = useState<string | null>(null);
 
+  // Layout Lock States requested strictly by user
+  const [isLocked, setIsLocked] = useState<boolean>(false);
+  const [lockedSnapshotUrl, setLockedSnapshotUrl] = useState<string | null>(null);
+  const [isLocking, setIsLocking] = useState<boolean>(false);
+
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const exportContainerRef = useRef<HTMLDivElement>(null);
 
@@ -78,12 +86,50 @@ export default function App() {
     }`;
   }, []);
 
-  // Direct Browser Print: Opens dedicated in-app Print Dialog Box instantly and attempts native print
-  const handlePrintA4 = () => {
-    // 1. Immediately open the on-screen Print Dialog Box modal so the user never encounters a blank non-response!
-    setIsPrintDialogOpen(true);
+  // Lock Preview Layout Snapshot function
+  const handleLockPreview = async (): Promise<string | null> => {
+    const node = previewContainerRef.current;
+    if (!node) return null;
+    setIsLocking(true);
+    try {
+      const dataUrl = await exportElementAsImage(node, {
+        format: 'png',
+        downloadImmediately: false,
+        quality: 1,
+        pixelRatio: 3, // Crisp HD 3x resolution
+        backgroundColor: '#ffffff',
+      });
+      setLockedSnapshotUrl(dataUrl);
+      setIsLocked(true);
+      setPrintFeedback('🔒 लेआउट लॉक हो गया है! अब प्रिंट, PDF व PNG में यही लॉक इमेज डाउनलोड होगी।');
+      try {
+        confetti({ particleCount: 40, spread: 60, origin: { y: 0.6 } });
+      } catch (_) {}
+      return dataUrl;
+    } catch (err) {
+      console.error('Failed to lock preview snapshot:', err);
+      setPrintFeedback('⚠️ लेआउट लॉक करने में समस्या आई।');
+      return null;
+    } finally {
+      setIsLocking(false);
+    }
+  };
 
-    // 2. Also trigger native window.print() if supported by the browser context
+  const handleUnlockPreview = () => {
+    setIsLocked(false);
+    setLockedSnapshotUrl(null);
+    setPrintFeedback('🔓 लेआउट अनलॉक हो गया है। आप टेक्स्ट व साइज बदल सकते हैं।');
+  };
+
+  const getOrGenerateLockSnapshot = async (): Promise<string | null> => {
+    if (lockedSnapshotUrl) return lockedSnapshotUrl;
+    return await handleLockPreview();
+  };
+
+  // Direct Browser Print
+  const handlePrintA4 = async () => {
+    await getOrGenerateLockSnapshot();
+    setIsPrintDialogOpen(true);
     try {
       window.focus();
       if (document.activeElement instanceof HTMLElement) {
@@ -109,7 +155,7 @@ export default function App() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [data]);
+  }, [data, lockedSnapshotUrl]);
 
   // Auto-trigger native system print dialog when opened with ?autoprint=true
   useEffect(() => {
@@ -128,6 +174,8 @@ export default function App() {
   const handleReset = () => {
     if (window.confirm('क्या आप सभी फ़ील्ड्स को मूल रूप में रीसेट करना चाहते हैं?')) {
       setData(DEFAULT_PAMPHLET_DATA);
+      setIsLocked(false);
+      setLockedSnapshotUrl(null);
     }
   };
 
@@ -145,22 +193,17 @@ export default function App() {
     setTimeout(() => setSavedAlert(false), 2000);
   };
 
-  // Direct A4 Single Pamphlet PDF Download with 100% WYSIWYG match
+  // Direct A4 Single Pamphlet PDF Download with 100% WYSIWYG locked image match
   const handleQuickDownloadPdf = async () => {
-    const node = exportContainerRef.current || previewContainerRef.current;
-    if (!node) return;
     setIsDownloading(true);
     try {
-      const dataUrl = await exportElementAsImage(node, {
-        format: 'png',
-        downloadImmediately: false,
-        quality: 1,
-        pixelRatio: 2.5,
-        backgroundColor: '#ffffff',
-      });
+      const dataUrl = await getOrGenerateLockSnapshot();
       if (dataUrl) {
         await downloadA4SinglePamphletPDF(dataUrl, data.candidateName);
-        confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+        setPrintFeedback('✅ A4 PDF डाउनलोड हो गया! 100% सही A4 प्रिंट निकलेगा।');
+        try {
+          confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+        } catch (_) {}
       }
     } catch (err) {
       console.error('PDF export error:', err);
@@ -170,25 +213,27 @@ export default function App() {
     }
   };
 
-  // High-Resolution PNG Download with 100% WYSIWYG match
+  // High-Resolution PNG Download with 100% WYSIWYG locked image match
   const handleQuickDownloadPng = async () => {
-    const node = exportContainerRef.current || previewContainerRef.current;
-    if (!node) return;
     setIsDownloading(true);
     try {
-      const filename = `wardpanch-a4-${(data.candidateName || 'pemphlet').replace(/[^a-zA-Z0-9\u0900-\u097F]/g, '_')}.png`;
-      await exportElementAsImage(node, {
-        format: 'png',
-        filename,
-        quality: 0.98,
-        pixelRatio: 2.5,
-        backgroundColor: '#ffffff',
-        downloadImmediately: true,
-      });
-      confetti({ particleCount: 40, spread: 50, origin: { y: 0.8 } });
+      const dataUrl = await getOrGenerateLockSnapshot();
+      if (dataUrl) {
+        const filename = `A4-Pemphlet-${(data.candidateName || 'wardpanch').replace(/[^a-zA-Z0-9\u0900-\u097F]/g, '_')}.png`;
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = dataUrl;
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => document.body.removeChild(link), 1000);
+        setPrintFeedback('✅ हाई-रेजोल्यूशन PNG डाउनलोड हो गई!');
+        try {
+          confetti({ particleCount: 40, spread: 50, origin: { y: 0.8 } });
+        } catch (_) {}
+      }
     } catch (err) {
       console.error('Image generation error:', err);
-      alert('इमेज डाउनलोड करने में समस्या आई। कृपया पुनः प्रयास करें।');
+      alert('इमेज डाउनलोड करने में समस्या आई।');
     } finally {
       setIsDownloading(false);
     }
@@ -323,26 +368,64 @@ export default function App() {
             </div>
           )}
 
-          {/* 1. PREVIEW CONTROL BAR WITH INSTANT PRINT BUTTON */}
+          {/* 1. PREVIEW CONTROL BAR WITH INSTANT LOCK, PRINT & DOWNLOADS */}
           <div className="bg-white p-2.5 sm:p-3 rounded-xl shadow-xs border border-neutral-200 flex items-center justify-between gap-3 flex-wrap preview-toolbar">
-            {/* Direct Native System Print Trigger (Opens in new tab where Chrome allows window.print) */}
             <div className="flex items-center gap-2 flex-wrap">
+              {/* LOCK BUTTON (Requested strictly by user) */}
+              {isLocked ? (
+                <div className="flex items-center gap-1.5 bg-emerald-600 text-white px-3 py-2 rounded-xl font-khand font-bold text-sm shadow-md border border-emerald-400">
+                  <Lock className="w-4 h-4 text-amber-300 animate-pulse shrink-0" />
+                  <span>🔒 लेआउट लॉक है</span>
+                  <button
+                    type="button"
+                    onClick={handleLockPreview}
+                    disabled={isLocking}
+                    className="ml-1 px-2.5 py-1 bg-amber-400 hover:bg-amber-300 text-neutral-950 text-xs rounded font-bold cursor-pointer transition-all flex items-center gap-1"
+                    title="नया स्नैपशॉट री-लॉक करें"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isLocking ? 'animate-spin' : ''}`} />
+                    <span>{isLocking ? 'कैप्चर...' : 'री-लॉक'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleUnlockPreview}
+                    className="px-2 py-1 bg-emerald-800 hover:bg-emerald-900 text-white text-xs rounded font-bold cursor-pointer transition-all flex items-center gap-1"
+                    title="संपादन चालू करने के लिए अनलॉक करें"
+                  >
+                    <Unlock className="w-3.5 h-3.5 text-emerald-200" />
+                    <span>अनलॉक</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleLockPreview}
+                  disabled={isLocking}
+                  className="px-4 py-2.5 bg-linear-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:from-amber-600 active:to-amber-700 text-neutral-950 rounded-xl font-khand font-black text-base flex items-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-50"
+                  title="डैशबोर्ड पर दिख रहे लेआउट को लॉक करें ताकि Print, PDF व PNG में 100% हुबहु यही इमेज आए"
+                >
+                  <Lock className="w-5 h-5 text-neutral-950 animate-bounce" />
+                  <span>{isLocking ? 'कैप्चर हो रहा है...' : '🔒 लेआउट लॉक करें (Lock Layout)'}</span>
+                </button>
+              )}
+
+              {/* Direct Native System Print Trigger */}
               <a
                 href={`${window.location.origin}${window.location.pathname}?autoprint=true`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl font-khand font-black text-lg flex items-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer"
+                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl font-khand font-black text-base flex items-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer"
                 title="सीधा सिस्टम प्रिंटर डायलॉग खोलें"
               >
-                <Printer className="w-5 h-5 text-white animate-pulse" />
-                <span>🖨️ सीधा सिस्टम प्रिंटर डायलॉग</span>
+                <Printer className="w-4 h-4 text-white animate-pulse" />
+                <span>🖨️ सीधा प्रिंट</span>
               </a>
 
-              {/* In-app Print & PDF Options modal */}
+              {/* In-app Print Options modal */}
               <button
                 type="button"
                 onClick={() => setIsPrintDialogOpen(true)}
-                className="px-3.5 py-2.5 bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-900 text-white rounded-xl font-khand font-bold text-base flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                className="px-3 py-2.5 bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-900 text-white rounded-xl font-khand font-bold text-sm flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
                 title="प्रिंट ऑप्शंस देखें"
               >
                 <Printer className="w-4 h-4 text-amber-400" />
@@ -353,11 +436,11 @@ export default function App() {
               <button
                 type="button"
                 onClick={handleQuickDownloadPdf}
-                disabled={isDownloading}
-                className="px-3.5 py-2.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-neutral-950 rounded-xl font-khand font-bold text-base flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50"
+                disabled={isDownloading || isLocking}
+                className="px-3.5 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl font-khand font-bold text-base flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50"
                 title="A4 साइज PDF डाउनलोड करें"
               >
-                <FileText className="w-4 h-4" />
+                <FileText className="w-4 h-4 text-amber-400" />
                 <span>{isDownloading ? 'तैयार हो रहा है...' : 'A4 PDF डाउनलोड'}</span>
               </button>
 
@@ -365,11 +448,11 @@ export default function App() {
               <button
                 type="button"
                 onClick={handleQuickDownloadPng}
-                disabled={isDownloading}
-                className="px-3 py-2.5 bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-900 text-white rounded-xl font-khand font-bold text-sm flex items-center gap-1.5 transition-all border border-neutral-700 disabled:opacity-50 cursor-pointer"
+                disabled={isDownloading || isLocking}
+                className="px-3 py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 rounded-xl font-khand font-bold text-sm flex items-center gap-1.5 transition-all border border-neutral-300 disabled:opacity-50 cursor-pointer"
                 title="हाई-रेजोल्यूशन PNG इमेज डाउनलोड करें"
               >
-                <Download className="w-4 h-4 text-emerald-400" />
+                <Download className="w-4 h-4 text-emerald-600" />
                 <span>PNG डाउनलोड</span>
               </button>
             </div>
@@ -379,7 +462,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setZoomScale((z) => Math.max(0.6, z - 0.1))}
-                className="p-1 rounded hover:bg-neutral-200"
+                className="p-1 rounded hover:bg-neutral-200 cursor-pointer"
                 title="Zoom Out"
               >
                 <ZoomOut className="w-4 h-4" />
@@ -390,7 +473,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setZoomScale((z) => Math.min(1.4, z + 0.1))}
-                className="p-1 rounded hover:bg-neutral-200"
+                className="p-1 rounded hover:bg-neutral-200 cursor-pointer"
                 title="Zoom In"
               >
                 <ZoomIn className="w-4 h-4" />
@@ -447,7 +530,7 @@ export default function App() {
               {/* THE AUTHENTIC A4 SHEET CONTAINER (PORTRAIT 210 x 297 mm) */}
               <div
                 id="main-a4-paper-sheet"
-                className="bg-white w-full max-w-[620px] aspect-[210/297] shadow-2xl border border-neutral-400 box-border flex flex-col justify-between"
+                className="bg-white w-full max-w-[620px] aspect-[210/297] shadow-2xl border border-neutral-400 box-border flex flex-col justify-between relative overflow-hidden"
                 style={{
                   padding: '5mm',
                   boxSizing: 'border-box',
@@ -455,9 +538,14 @@ export default function App() {
                   minHeight: '877px',
                 }}
               >
+                {/* Live editable preview container (Always in DOM for capturing) */}
                 <div
                   ref={previewContainerRef}
-                  className="w-full h-full flex flex-col justify-between flex-1"
+                  className={`w-full h-full flex flex-col justify-between flex-1 ${
+                    isLocked && lockedSnapshotUrl
+                      ? 'opacity-0 absolute inset-0 pointer-events-none z-0'
+                      : 'relative z-10'
+                  }`}
                 >
                   <PamphletPreview
                     data={data}
@@ -465,6 +553,21 @@ export default function App() {
                     onOpenSymbolModal={() => setIsSymbolModalOpen(true)}
                   />
                 </div>
+
+                {/* Locked Snapshot Display Mode */}
+                {isLocked && lockedSnapshotUrl && (
+                  <div className="absolute inset-0 z-10 w-full h-full flex flex-col items-center justify-center bg-white p-[5mm] box-border">
+                    <img
+                      src={lockedSnapshotUrl}
+                      alt="Locked Pamphlet Preview"
+                      className="w-full h-full object-contain pointer-events-none shadow-xs"
+                    />
+                    <div className="absolute top-3 right-3 bg-emerald-600/95 text-white text-xs font-khand font-black px-3 py-1.5 rounded-lg shadow-xl flex items-center gap-1.5 backdrop-blur-xs border border-emerald-300 no-print">
+                      <Lock className="w-4 h-4 text-amber-300 animate-pulse" />
+                      <span>🔒 लेआउट लॉक इमेज (Exact Print & Download Match)</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

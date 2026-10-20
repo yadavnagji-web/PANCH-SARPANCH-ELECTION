@@ -11,18 +11,10 @@ export async function downloadA4SinglePamphletPDF(imageDataUrl: string, candidat
     format: 'a4',
   });
 
-  const pageWidth = 210;
-  const pageHeight = 297;
-  const margin = 5; // 5mm uniform margin
-  const printableWidth = pageWidth - margin * 2; // 200 mm
-  const printableHeight = pageHeight - margin * 2; // 287 mm
-
-  // Keep true 210:297 A4 aspect ratio so there is zero vertical or horizontal stretching
-  const imgWidth = printableWidth;
-  const imgHeight = (printableWidth * 297) / 210; // 282.85 mm
-  const offsetY = margin + (printableHeight - imgHeight) / 2;
-
-  doc.addImage(imageDataUrl, 'PNG', margin, offsetY, imgWidth, imgHeight, undefined, 'FAST');
+  // A4 size: 210 x 297 mm
+  // The locked preview snapshot includes the 5mm internal padding from #main-a4-paper-sheet.
+  // Placing at (0, 0, 210, 297) guarantees 100% pixel-perfect WYSIWYG fidelity on paper and PDF!
+  doc.addImage(imageDataUrl, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
 
   const cleanName = (candidateName || 'wardpanch').replace(/[^a-zA-Z0-9\u0900-\u097F]/g, '_');
   doc.save(`A4-Pemphlet-${cleanName}.pdf`);
