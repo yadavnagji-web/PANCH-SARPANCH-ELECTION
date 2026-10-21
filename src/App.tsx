@@ -28,6 +28,7 @@ import {
   downloadA4SinglePamphletPDF,
   downloadSinglePamphletPDF,
   downloadA4TwoPamphletsCustomPDF,
+  downloadA4FourPamphletsPDF,
 } from './utils/pdfGenerator.ts';
 
 const STORAGE_KEY = 'wardpanch_pamphlet_data_v4';
@@ -229,6 +230,26 @@ export default function App() {
     } catch (err) {
       console.error('2-Up PDF export error:', err);
       alert('2-in-1 PDF डाउनलोड करने में समस्या आई।');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // 1-Click A4 4-in-1 Quad Pamphlet PDF Download (95 mm x 138.5 mm with 5mm margin around each)
+  const handleDownload4UpPdf = async () => {
+    setIsDownloading(true);
+    try {
+      const dataUrl = await getOrGenerateLockSnapshot();
+      if (dataUrl) {
+        await downloadA4FourPamphletsPDF(dataUrl, data.candidateName);
+        setPrintFeedback('✅ A4 पर 4 पैम्फलेट (5mm मार्जिन) PDF सफलतापूर्वक डाउनलोड हो गया!');
+        try {
+          confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+        } catch (_) {}
+      }
+    } catch (err) {
+      console.error('4-Up PDF export error:', err);
+      alert('4-in-1 PDF डाउनलोड करने में समस्या आई।');
     } finally {
       setIsDownloading(false);
     }
@@ -474,7 +495,19 @@ export default function App() {
                 title="1-क्लिक में A4 लैंडस्केप पेज पर 2 पैम्फलेट सेट करें (137 × 197 mm)"
               >
                 <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
-                <span>{isDownloading ? 'तैयार हो रहा है...' : '📄 A4 पर 2 सेट (137×197mm)'}</span>
+                <span>📄 A4 पर 2 सेट</span>
+              </button>
+
+              {/* 1-Click A4 4-in-1 Quad Pamphlet PDF (95 mm x 138.5 mm) as requested */}
+              <button
+                type="button"
+                onClick={handleDownload4UpPdf}
+                disabled={isDownloading || isLocking}
+                className="px-3.5 py-2.5 bg-linear-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white rounded-xl font-khand font-black text-base flex items-center gap-1.5 shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-50 border border-purple-400"
+                title="1-क्लिक में A4 पोर्ट्रेट पेज पर 4 पैम्फलेट सेट करें (प्रत्येक के चारों ओर 5mm मार्जिन)"
+              >
+                <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+                <span>{isDownloading ? 'तैयार हो रहा है...' : '📄 A4 पर 4 सेट (95×138mm)'}</span>
               </button>
 
               {/* PNG Download */}
@@ -715,13 +748,27 @@ export default function App() {
                     setIsPrintDialogOpen(false);
                   }}
                   disabled={isDownloading}
-                  className="w-full py-3 px-4 bg-linear-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-khand font-black text-lg rounded-xl shadow-lg flex items-center justify-center gap-2.5 transition-all cursor-pointer disabled:opacity-50 border border-emerald-400"
+                  className="w-full py-2.5 px-4 bg-linear-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-khand font-black text-lg rounded-xl shadow-md flex items-center justify-center gap-2.5 transition-all cursor-pointer disabled:opacity-50 border border-emerald-400"
+                >
+                  <Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />
+                  <span>📄 1-क्लिक A4 पर 2 पैम्फलेट PDF (137 × 197 mm)</span>
+                </button>
+
+                {/* 4. Featured 1-Click A4 4-in-1 Quad Pamphlet PDF (95 mm x 138.5 mm with 5mm margins) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleDownload4UpPdf();
+                    setIsPrintDialogOpen(false);
+                  }}
+                  disabled={isDownloading}
+                  className="w-full py-3 px-4 bg-linear-to-r from-purple-700 to-indigo-700 hover:from-purple-600 hover:to-indigo-600 text-white font-khand font-black text-lg rounded-xl shadow-lg flex items-center justify-center gap-2.5 transition-all cursor-pointer disabled:opacity-50 border border-purple-400"
                 >
                   <Sparkles className="w-5 h-5 text-amber-300 animate-bounce" />
                   <div className="flex flex-col items-center leading-tight">
-                    <span>📄 1-क्लिक A4 पर 2 पैम्फलेट PDF (137 × 197 mm)</span>
-                    <span className="text-xs font-normal text-emerald-100 font-devanagari">
-                      (A4 लैंडस्केप पेज पर 2 साइड-बाय-साइड पैम्फलेट सेट - हुबहु आपके नमूने अनुसार)
+                    <span>📄 1-क्लिक A4 पर 4 पैम्फलेट PDF (95 × 138.5 mm)</span>
+                    <span className="text-xs font-normal text-purple-100 font-devanagari">
+                      (A4 पेज पर 2x2 ग्रिड में 4 पैम्फलेट — प्रत्येक के चारों ओर 5mm मार्जिन)
                     </span>
                   </div>
                 </button>

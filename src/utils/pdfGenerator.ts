@@ -154,55 +154,72 @@ export async function downloadA4TwoPamphletsCustomPDF(imageDataUrl: string, cand
 }
 
 /**
- * Generates and downloads an A4 Landscape PDF with FOUR pamphlets (Voter Slips)
- * in a 2x2 grid with horizontal and vertical cut lines.
+ * Generates and downloads an A4 Portrait PDF with FOUR Pamphlets arranged in a 2x2 grid.
+ * Each design has an exact 5mm margin around it (10mm total gap between designs both vertically and horizontally).
+ * 
+ * Dimensions:
+ * A4 Portrait: 210 mm width × 297 mm height
+ * Grid: 2 columns × 2 rows (cell size: 105 mm × 148.5 mm)
+ * Each Pamphlet: 95 mm width × 138.5 mm height
+ * Center Vertical Cut Line: X = 105 mm
+ * Center Horizontal Cut Line: Y = 148.5 mm
+ * 5mm margin on all 4 sides of each pamphlet
  */
 export async function downloadA4FourPamphletsPDF(imageDataUrl: string, candidateName: string) {
   const doc = new jsPDF({
-    orientation: 'landscape',
+    orientation: 'portrait',
     unit: 'mm',
     format: 'a4',
   });
 
-  const pageWidth = 297;
-  const pageHeight = 210;
+  const pageWidth = 210;
+  const pageHeight = 297;
 
-  // Each slip in 2x2 grid
-  const slipWidth = 132;
-  const slipHeight = 92;
+  const centerVerticalX = pageWidth / 2; // 105 mm
+  const centerHorizontalY = pageHeight / 2; // 148.5 mm
 
-  const col1X = 10;
-  const col2X = 155;
-  const row1Y = 8;
-  const row2Y = 110;
+  // 5mm margin around each design
+  const margin = 5; // 5 mm
+  const pamphletWidth = 95; // 105 - (5 + 5)
+  const pamphletHeight = 138.5; // 148.5 - (5 + 5)
 
-  // Draw 4 instances
-  doc.addImage(imageDataUrl, 'PNG', col1X, row1Y, slipWidth, slipHeight, undefined, 'FAST');
-  doc.addImage(imageDataUrl, 'PNG', col2X, row1Y, slipWidth, slipHeight, undefined, 'FAST');
-  doc.addImage(imageDataUrl, 'PNG', col1X, row2Y, slipWidth, slipHeight, undefined, 'FAST');
-  doc.addImage(imageDataUrl, 'PNG', col2X, row2Y, slipWidth, slipHeight, undefined, 'FAST');
+  const col1X = margin; // 5 mm
+  const col2X = centerVerticalX + margin; // 110 mm
 
-  // Center vertical cutting line
-  const centerX = pageWidth / 2;
-  const centerY = pageHeight / 2;
+  const row1Y = margin; // 5 mm
+  const row2Y = centerHorizontalY + margin; // 153.5 mm
 
-  doc.setDrawColor(140, 140, 140);
+  // Add 4 Pamphlet instances
+  // Top-Left
+  doc.addImage(imageDataUrl, 'PNG', col1X, row1Y, pamphletWidth, pamphletHeight, undefined, 'FAST');
+  // Top-Right
+  doc.addImage(imageDataUrl, 'PNG', col2X, row1Y, pamphletWidth, pamphletHeight, undefined, 'FAST');
+  // Bottom-Left
+  doc.addImage(imageDataUrl, 'PNG', col1X, row2Y, pamphletWidth, pamphletHeight, undefined, 'FAST');
+  // Bottom-Right
+  doc.addImage(imageDataUrl, 'PNG', col2X, row2Y, pamphletWidth, pamphletHeight, undefined, 'FAST');
+
+  // Draw Center Vertical and Horizontal Cutting Guidelines (✂ --- Dotted Lines)
+  doc.setDrawColor(160, 160, 160);
   doc.setLineWidth(0.3);
   doc.setLineDashPattern([2, 2], 0);
 
-  // Vertical line
-  doc.line(centerX, 5, centerX, pageHeight - 5);
-  // Horizontal line
-  doc.line(5, centerY, pageWidth - 5, centerY);
+  // Vertical Cut Line
+  doc.line(centerVerticalX, 3, centerVerticalX, pageHeight - 3);
+  // Horizontal Cut Line
+  doc.line(3, centerHorizontalY, pageWidth - 3, centerHorizontalY);
 
-  // Scissors marks
+  // Scissor Marks
   doc.setFontSize(10);
-  doc.setTextColor(100, 100, 100);
-  doc.text('✂', centerX, 8, { align: 'center' });
-  doc.text('✂', centerX, pageHeight - 6, { align: 'center' });
-  doc.text('✂', 8, centerY - 1);
-  doc.text('✂', pageWidth - 12, centerY - 1);
+  doc.setTextColor(120, 120, 120);
+  // Top & Bottom vertical cut scissor icons
+  doc.text('✂', centerVerticalX, 7, { align: 'center' });
+  doc.text('✂', centerVerticalX, pageHeight - 5, { align: 'center' });
+
+  // Left & Right horizontal cut scissor icons
+  doc.text('✂', 6, centerHorizontalY - 1);
+  doc.text('✂', pageWidth - 10, centerHorizontalY - 1);
 
   const cleanName = (candidateName || 'wardpanch').replace(/[^a-zA-Z0-9\u0900-\u097F]/g, '_');
-  doc.save(`A4-4-in-1-Slips-${cleanName}.pdf`);
+  doc.save(`A4-4in1-95x138mm-${cleanName}.pdf`);
 }
