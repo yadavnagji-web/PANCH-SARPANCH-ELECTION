@@ -97,14 +97,16 @@ export async function downloadA4TwoPamphletsPDF(imageDataUrl: string, candidateN
 
 /**
  * Generates and downloads an A4 Landscape PDF with TWO Pamphlets placed side-by-side,
- * each sized EXACTLY Width: 137 mm, Height: 197 mm, matching the user's attached reference PDF.
+ * each sized EXACTLY Width: 137 mm, Height: 197 mm.
  * 
- * Dimensions:
- * A4 Landscape: 297 mm width × 210 mm height
- * Two Pamphlets: 137 mm width × 197 mm height each
- * Left pamphlet: X = 8 mm, Y = 6.5 mm
- * Right pamphlet: X = 152 mm, Y = 6.5 mm
- * Center cut mark: X = 148.5 mm (exact middle)
+ * Exact user layout specifications:
+ * - Center cutting line at X = 148.5 mm (exact middle of 297 mm A4 Landscape).
+ * - Gap between Center Cut Line and Left Pamphlet = 5 mm (Left Pamphlet Right Edge X = 143.5 mm).
+ * - Gap between Center Cut Line and Right Pamphlet = 5 mm (Right Pamphlet Left Edge X = 153.5 mm).
+ * - Total gap between the two designs = 10 mm.
+ * - Left Pamphlet X = 148.5 - 5 - 137 = 6.5 mm.
+ * - Right Pamphlet X = 148.5 + 5 = 153.5 mm.
+ * - Top & Bottom margin = 6.5 mm ((210 - 197) / 2).
  */
 export async function downloadA4TwoPamphletsCustomPDF(imageDataUrl: string, candidateName: string) {
   const doc = new jsPDF({
@@ -121,9 +123,12 @@ export async function downloadA4TwoPamphletsCustomPDF(imageDataUrl: string, cand
   const pamphletHeight = 197; // 197 mm
 
   const topMargin = (pageHeight - pamphletHeight) / 2; // 6.5 mm
-  const leftPamphletX = 8; // 8 mm margin
-  const rightPamphletX = 152; // 152 mm (152 + 137 = 289 mm, leaving 8 mm right margin)
-  const centerCuttingX = pageWidth / 2; // 148.5 mm
+  const centerCuttingX = pageWidth / 2; // 148.5 mm (exact middle)
+
+  // 5mm gap on each side of the center cut line = 10mm total gap between designs
+  const centerGap = 5; // 5 mm gap on each side from cut line
+  const leftPamphletX = centerCuttingX - centerGap - pamphletWidth; // 6.5 mm
+  const rightPamphletX = centerCuttingX + centerGap; // 153.5 mm
 
   // 1. Add Left Pamphlet (137 x 197 mm)
   doc.addImage(imageDataUrl, 'PNG', leftPamphletX, topMargin, pamphletWidth, pamphletHeight, undefined, 'FAST');
