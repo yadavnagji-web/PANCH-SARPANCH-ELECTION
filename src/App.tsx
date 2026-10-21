@@ -27,6 +27,7 @@ import { exportElementAsImage } from './utils/exportImage.ts';
 import {
   downloadA4SinglePamphletPDF,
   downloadSinglePamphletPDF,
+  downloadA4TwoPamphletsCustomPDF,
 } from './utils/pdfGenerator.ts';
 
 const STORAGE_KEY = 'wardpanch_pamphlet_data_v4';
@@ -208,6 +209,26 @@ export default function App() {
     } catch (err) {
       console.error('PDF export error:', err);
       alert('PDF डाउनलोड करने में समस्या आई। कृपया पुनः प्रयास करें।');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // 1-Click A4 2-in-1 Dual Pamphlet PDF Download (137 mm x 197 mm) as requested
+  const handleDownload2UpPdf = async () => {
+    setIsDownloading(true);
+    try {
+      const dataUrl = await getOrGenerateLockSnapshot();
+      if (dataUrl) {
+        await downloadA4TwoPamphletsCustomPDF(dataUrl, data.candidateName);
+        setPrintFeedback('✅ A4 पर 2 पैम्फलेट (137 × 197 mm) PDF सफलतापूर्वक डाउनलोड हो गया!');
+        try {
+          confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+        } catch (_) {}
+      }
+    } catch (err) {
+      console.error('2-Up PDF export error:', err);
+      alert('2-in-1 PDF डाउनलोड करने में समस्या आई।');
     } finally {
       setIsDownloading(false);
     }
@@ -432,16 +453,28 @@ export default function App() {
                 <span>प्रिंट विकल्प</span>
               </button>
 
-              {/* Direct A4 PDF Download */}
+              {/* Direct A4 Single PDF Download */}
               <button
                 type="button"
                 onClick={handleQuickDownloadPdf}
                 disabled={isDownloading || isLocking}
-                className="px-3.5 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl font-khand font-bold text-base flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50"
-                title="A4 साइज PDF डाउनलोड करें"
+                className="px-3 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl font-khand font-bold text-sm flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50"
+                title="1 A4 पेज = 1 पैम्फलेट PDF डाउनलोड करें"
               >
                 <FileText className="w-4 h-4 text-amber-400" />
-                <span>{isDownloading ? 'तैयार हो रहा है...' : 'A4 PDF डाउनलोड'}</span>
+                <span>1 A4 PDF</span>
+              </button>
+
+              {/* 1-Click A4 2-in-1 Dual Pamphlet PDF (137 mm x 197 mm) as requested */}
+              <button
+                type="button"
+                onClick={handleDownload2UpPdf}
+                disabled={isDownloading || isLocking}
+                className="px-3.5 py-2.5 bg-linear-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white rounded-xl font-khand font-black text-base flex items-center gap-1.5 shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-50 border border-emerald-400"
+                title="1-क्लिक में A4 लैंडस्केप पेज पर 2 पैम्फलेट सेट करें (137 × 197 mm)"
+              >
+                <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+                <span>{isDownloading ? 'तैयार हो रहा है...' : '📄 A4 पर 2 सेट (137×197mm)'}</span>
               </button>
 
               {/* PNG Download */}
@@ -658,7 +691,7 @@ export default function App() {
                   <span>🖨️ सीधा सिस्टम प्रिंटर डायलॉग खोलें (100% गारंटी)</span>
                 </a>
 
-                {/* 2. Quick A4 PDF Download */}
+                {/* 2. Quick A4 Single PDF Download */}
                 <button
                   type="button"
                   onClick={() => {
@@ -666,12 +699,31 @@ export default function App() {
                     setIsPrintDialogOpen(false);
                   }}
                   disabled={isDownloading}
-                  className="w-full py-3 px-4 bg-linear-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 font-khand font-black text-lg rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                  className="w-full py-2.5 px-4 bg-linear-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 font-khand font-black text-lg rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
                 >
                   <FileText className="w-5 h-5" />
                   <span>
-                    {isDownloading ? 'तैयार हो रहा है...' : '📄 1-क्लिक A4 PDF डाउनलोड करें (सीधा प्रिंट)'}
+                    {isDownloading ? 'तैयार हो रहा है...' : '📄 Single A4 PDF (1 A4 = 1 पैम्फलेट)'}
                   </span>
+                </button>
+
+                {/* 3. Featured 1-Click A4 2-in-1 Dual Pamphlet PDF (137 mm x 197 mm) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleDownload2UpPdf();
+                    setIsPrintDialogOpen(false);
+                  }}
+                  disabled={isDownloading}
+                  className="w-full py-3 px-4 bg-linear-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-khand font-black text-lg rounded-xl shadow-lg flex items-center justify-center gap-2.5 transition-all cursor-pointer disabled:opacity-50 border border-emerald-400"
+                >
+                  <Sparkles className="w-5 h-5 text-amber-300 animate-bounce" />
+                  <div className="flex flex-col items-center leading-tight">
+                    <span>📄 1-क्लिक A4 पर 2 पैम्फलेट PDF (137 × 197 mm)</span>
+                    <span className="text-xs font-normal text-emerald-100 font-devanagari">
+                      (A4 लैंडस्केप पेज पर 2 साइड-बाय-साइड पैम्फलेट सेट - हुबहु आपके नमूने अनुसार)
+                    </span>
+                  </div>
                 </button>
 
                 {/* 3. In-page Browser Print Dialog (Fallback) */}

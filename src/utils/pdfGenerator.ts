@@ -96,6 +96,59 @@ export async function downloadA4TwoPamphletsPDF(imageDataUrl: string, candidateN
 }
 
 /**
+ * Generates and downloads an A4 Landscape PDF with TWO Pamphlets placed side-by-side,
+ * each sized EXACTLY Width: 137 mm, Height: 197 mm, matching the user's attached reference PDF.
+ * 
+ * Dimensions:
+ * A4 Landscape: 297 mm width × 210 mm height
+ * Two Pamphlets: 137 mm width × 197 mm height each
+ * Left pamphlet: X = 8 mm, Y = 6.5 mm
+ * Right pamphlet: X = 152 mm, Y = 6.5 mm
+ * Center cut mark: X = 148.5 mm (exact middle)
+ */
+export async function downloadA4TwoPamphletsCustomPDF(imageDataUrl: string, candidateName: string) {
+  const doc = new jsPDF({
+    orientation: 'landscape',
+    unit: 'mm',
+    format: 'a4',
+  });
+
+  const pageWidth = 297;
+  const pageHeight = 210;
+
+  // Exact user specified dimensions
+  const pamphletWidth = 137; // 137 mm
+  const pamphletHeight = 197; // 197 mm
+
+  const topMargin = (pageHeight - pamphletHeight) / 2; // 6.5 mm
+  const leftPamphletX = 8; // 8 mm margin
+  const rightPamphletX = 152; // 152 mm (152 + 137 = 289 mm, leaving 8 mm right margin)
+  const centerCuttingX = pageWidth / 2; // 148.5 mm
+
+  // 1. Add Left Pamphlet (137 x 197 mm)
+  doc.addImage(imageDataUrl, 'PNG', leftPamphletX, topMargin, pamphletWidth, pamphletHeight, undefined, 'FAST');
+
+  // 2. Add Right Pamphlet (137 x 197 mm)
+  doc.addImage(imageDataUrl, 'PNG', rightPamphletX, topMargin, pamphletWidth, pamphletHeight, undefined, 'FAST');
+
+  // 3. Draw Center Cutting Guideline (✂ --- Dotted Line)
+  doc.setDrawColor(160, 160, 160);
+  doc.setLineWidth(0.3);
+  doc.setLineDashPattern([2, 2], 0);
+  doc.line(centerCuttingX, 4, centerCuttingX, pageHeight - 4);
+
+  // Add Scissor marks
+  doc.setFontSize(10);
+  doc.setTextColor(120, 120, 120);
+  doc.text('✂', centerCuttingX, 8, { align: 'center' });
+  doc.text('✂', centerCuttingX, pageHeight / 2, { align: 'center' });
+  doc.text('✂', centerCuttingX, pageHeight - 6, { align: 'center' });
+
+  const cleanName = (candidateName || 'wardpanch').replace(/[^a-zA-Z0-9\u0900-\u097F]/g, '_');
+  doc.save(`A4-2in1-137x197mm-${cleanName}.pdf`);
+}
+
+/**
  * Generates and downloads an A4 Landscape PDF with FOUR pamphlets (Voter Slips)
  * in a 2x2 grid with horizontal and vertical cut lines.
  */
