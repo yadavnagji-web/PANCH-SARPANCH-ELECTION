@@ -343,7 +343,7 @@ export const PamphletPreview: React.FC<PamphletPreviewProps> = ({
             <div className="grid grid-cols-12 bg-neutral-200/90 border-b border-current text-[11px] font-bold text-center py-0.5 shrink-0 uppercase">
               <div className="col-span-2 border-r border-current">क. सं.</div>
               <div className="col-span-5 border-r border-current">अभ्यर्थी का नाम</div>
-              <div className="col-span-5">चुनाव चिन्ह एवं मतदान मुहर</div>
+              <div className="col-span-5">चुनाव चिन्ह</div>
             </div>
 
             {/* Dynamically Generated Rows (each row flex-1 so all vertical space is completely filled) */}
@@ -406,51 +406,60 @@ export const PamphletPreview: React.FC<PamphletPreviewProps> = ({
                           </div>
                         </div>
                       ) : (
-                        <div className="w-full border-b border-dashed border-neutral-300 my-auto h-0" />
+                        <div className="w-full h-full" />
                       )}
                     </div>
 
-                    {/* Merged Column 3 & 4: Election Symbol + Voting Stamp (No vertical dividing line) */}
+                    {/* Merged Column 3: Election Symbol Name (Left) + Symbol Graphic (Right) + Voting Stamp */}
                     <div
                       onClick={() => isCandidateRow && onOpenSymbolModal && onOpenSymbolModal()}
-                      className={`col-span-5 self-stretch h-full flex items-center justify-around px-2 p-0.5 ${
+                      className={`col-span-5 self-stretch h-full flex items-center justify-around px-2 py-0.5 ${
                         isCandidateRow ? 'cursor-pointer hover:bg-amber-100/40' : ''
                       }`}
                       title={isCandidateRow ? 'चिन्ह बदलने के लिए क्लिक करें' : ''}
                     >
                       {isCandidateRow ? (
-                        <>
+                        <div className="w-full flex items-center justify-between sm:justify-around gap-1.5 px-1">
+                          {/* 1. Symbol Name Text on Left */}
                           <div
-                            className="flex flex-col items-center justify-center"
+                            className="font-black text-neutral-950 text-sm sm:text-base font-khand leading-tight text-left shrink-0"
                             style={{
                               transform: `translate(${data.tableSymbolOffsetX || 0}px, ${data.tableSymbolOffsetY || 0}px)`,
                             }}
                           >
-                            {renderSymbolGraphic(data.tableSymbolSize || 64)}
-                            <span className="text-[10px] font-bold text-neutral-900 mt-0.5 leading-tight">
-                              {data.symbolNameText}
-                            </span>
+                            <span>{data.symbolNameText}</span>
                           </div>
 
-                          {data.showStampMark && (
+                          {/* 2. Symbol Graphic Image Right Next to it */}
+                          <div
+                            className="flex items-center justify-center shrink-0"
+                            style={{
+                              transform: `translate(${data.tableSymbolOffsetX || 0}px, ${data.tableSymbolOffsetY || 0}px)`,
+                            }}
+                          >
+                            {renderSymbolGraphic(data.tableSymbolSize || 58)}
+                          </div>
+
+                          {/* 3. Voting Stamp Mark Right Next to it */}
+                          {data.showStampMark ? (
                             <div
+                              className="shrink-0"
                               style={{
                                 transform: `translate(${data.stampOffsetX || 0}px, ${data.stampOffsetY || 0}px)`,
                               }}
                             >
                               <SwastikStamp
-                                size={data.stampSize || 52}
+                                size={data.stampSize || 48}
                                 color={themeClasses.stampColor}
                                 rotation={-6}
                               />
                             </div>
+                          ) : (
+                            <div className="w-5 h-5 rounded-full border border-neutral-300 opacity-20 shrink-0" />
                           )}
-                        </>
-                      ) : (
-                        <div className="w-full flex items-center justify-around opacity-30">
-                          <div className="w-6 h-6 rounded-full border border-dashed border-neutral-300" />
-                          <div className="w-5 h-5 rounded-full border border-neutral-300" />
                         </div>
+                      ) : (
+                        <div className="w-full h-full" />
                       )}
                     </div>
                   </div>
@@ -463,7 +472,7 @@ export const PamphletPreview: React.FC<PamphletPreviewProps> = ({
                   <div className="col-span-2 text-center border-r border-current py-0.5 font-black">NOTA</div>
                   <div className="col-span-5 px-2 border-r border-current py-0.5">नोटा (इनमें से कोई नहीं)</div>
                   <div className="col-span-5 text-center flex items-center justify-around font-black text-neutral-600 py-0.5">
-                    <span>✕</span>
+                    <span>NOTA</span>
                     <span className="opacity-30">◯</span>
                   </div>
                 </div>
