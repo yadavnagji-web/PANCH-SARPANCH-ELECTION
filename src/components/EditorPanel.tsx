@@ -52,11 +52,15 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
   const updateField = <K extends keyof PamphletData>(key: K, value: PamphletData[K]) => {
     const updated = { ...data, [key]: value };
 
-    // Auto update appeal slogan if row or symbol changed
-    if (key === 'candidateRow' || key === 'symbolNameText') {
-      const row = key === 'candidateRow' ? value : updated.candidateRow;
-      const sym = key === 'symbolNameText' ? value : updated.symbolNameText;
-      updated.appealHeadline = `को वार्ड पंच हेतु ${row} नंबर पर ${sym} के निशान पर मुहर लगाकर भारी मतों से विजयी बनावें ।`;
+    // Auto update appeal slogan if row, symbol, or candidate post title changed
+    if (key === 'candidateRow' || key === 'symbolNameText' || key === 'candidatePostTitle') {
+      const row = key === 'candidateRow' ? (value as number) : updated.candidateRow;
+      const sym = key === 'symbolNameText' ? (value as string) : updated.symbolNameText;
+      const post = key === 'candidatePostTitle' ? (value as string) : (updated.candidatePostTitle || 'वार्ड पंच');
+      updated.appealHeadline = `को ${post} हेतु ${row} नंबर पर ${sym} के निशान पर मुहर लगाकर भारी मतों से विजयी बनावें ।`;
+      if (key === 'candidatePostTitle') {
+        updated.matpatraHeading = `${post === 'वार्ड पंच' ? 'पंच' : post} निर्वाचन के लिए मतपत्र का नमूना`;
+      }
     }
 
     onChange(updated);
@@ -399,6 +403,79 @@ export const EditorPanel: React.FC<EditorPanelProps> = ({
               onChange={(e) => updateField('candidateNameSize', parseInt(e.target.value))}
               className="w-full accent-blue-600 cursor-pointer"
             />
+          </div>
+
+          {/* Candidate Post / Designation Selection */}
+          <div className="pt-2 border-t border-neutral-200 space-y-1.5">
+            <label className="block text-xs font-bold text-neutral-800">
+              चुनाव पदनाम (Post): जैसे सरपंच, वार्ड पंच...
+            </label>
+            <div className="flex flex-wrap gap-1">
+              {['वार्ड पंच', 'सरपंच', 'जिला परिषद सदस्य', 'प्रधान', 'बीडीसी सदस्य', 'उप-सरपंच'].map((postOption) => (
+                <button
+                  key={postOption}
+                  type="button"
+                  onClick={() => updateField('candidatePostTitle', postOption)}
+                  className={`px-2 py-1 rounded text-xs font-bold font-khand transition-colors ${
+                    (data.candidatePostTitle || 'वार्ड पंच') === postOption
+                      ? 'bg-blue-700 text-white shadow-2xs'
+                      : 'bg-white border border-neutral-300 text-neutral-700 hover:bg-neutral-100'
+                  }`}
+                >
+                  {postOption}
+                </button>
+              ))}
+            </div>
+            <input
+              type="text"
+              value={data.candidatePostTitle || 'वार्ड पंच'}
+              onChange={(e) => updateField('candidatePostTitle', e.target.value)}
+              placeholder="उदा. सरपंच, वार्ड पंच, जिला परिषद..."
+              className="w-full px-2.5 py-1.5 border-2 border-blue-400 rounded-lg font-khand font-bold text-base focus:ring-2 focus:ring-blue-500 bg-white"
+            />
+            <span className="text-[10px] text-neutral-500 font-devanagari block">
+              सरपंच चुनने पर पोस्टर पर '(सरपंच प्रत्याशी)' और अपील में 'को सरपंच हेतु...' दिखेगा
+            </span>
+          </div>
+
+          {/* Appeal Slogan Headline */}
+          <div className="pt-2 border-t border-neutral-200 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-amber-950 flex items-center gap-1 font-khand text-sm">
+                <Vote className="w-3.5 h-3.5 text-amber-600" />
+                <span>मुख्य चुनाव अपील / नारा (Slogan):</span>
+              </label>
+              <label className="text-[11px] text-neutral-600 cursor-pointer font-semibold">
+                <input
+                  type="checkbox"
+                  checked={data.showAppealHeadline}
+                  onChange={(e) => updateField('showAppealHeadline', e.target.checked)}
+                  className="mr-1 text-blue-600 rounded"
+                />
+                <span>अपील पट्टी दिखाएं</span>
+              </label>
+            </div>
+            <textarea
+              rows={2}
+              value={data.appealHeadline}
+              onChange={(e) => updateField('appealHeadline', e.target.value)}
+              placeholder="उदा. को सरपंच हेतु 3 नंबर पर अलमारी के निशान पर मुहर लगाकर भारी मतों से विजयी बनावें ।"
+              className="w-full px-2.5 py-1.5 border-2 border-amber-300 rounded-lg text-xs font-bold font-devanagari bg-amber-50/50 focus:ring-2 focus:ring-amber-500 text-neutral-900"
+            />
+            <div className="flex justify-between items-center text-xs">
+              <span className="font-semibold text-neutral-600">अपील का आकार:</span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="11"
+                  max="24"
+                  value={data.appealFontSize || 16}
+                  onChange={(e) => updateField('appealFontSize', parseInt(e.target.value))}
+                  className="w-28 accent-amber-600"
+                />
+                <span className="font-mono font-bold text-amber-900">{data.appealFontSize || 16}px</span>
+              </div>
+            </div>
           </div>
 
           {/* Mobile number */}

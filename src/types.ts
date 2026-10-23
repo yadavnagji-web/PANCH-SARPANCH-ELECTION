@@ -41,8 +41,9 @@ export interface PamphletData {
   qualitiesOffsetX: number;
   qualitiesOffsetY: number;
 
-  // Candidate Name
+  // Candidate Name & Post / Designation
   candidateName: string;
+  candidatePostTitle: string; // e.g. "वार्ड पंच", "सरपंच", "जिला परिषद सदस्य", etc.
   candidateNameSize: number;
   candidateNameOffsetX: number;
   candidateNameOffsetY: number;

@@ -310,7 +310,7 @@ export const PamphletPreview: React.FC<PamphletPreviewProps> = ({
               >
                 {data.appealHeadline || (
                   <>
-                    को वार्ड पंच हेतु <span className="underline font-black">{candidateRowIndex} नंबर</span> पर{' '}
+                    को {data.candidatePostTitle || 'वार्ड पंच'} हेतु <span className="underline font-black">{candidateRowIndex} नंबर</span> पर{' '}
                     <span className="underline font-black">{data.symbolNameText}</span> के निशान पर मुहर लगाकर भारी मतों से विजयी बनावें ।
                   </>
                 )}
@@ -329,7 +329,7 @@ export const PamphletPreview: React.FC<PamphletPreviewProps> = ({
                   className="font-black text-sm"
                   style={{ fontSize: `${data.matpatraHeadingFontSize || 14}px` }}
                 >
-                  {data.matpatraHeading || 'पंच निर्वाचन के लिए मतपत्र का नमूना'}
+                  {data.matpatraHeading || `${data.candidatePostTitle === 'वार्ड पंच' ? 'पंच' : (data.candidatePostTitle || 'पंच')} निर्वाचन के लिए मतपत्र का नमूना`}
                 </span>
                 <span className="text-[10px] text-neutral-600 font-devanagari ml-1.5 font-normal">
                   (मतपत्र: {data.ballotPaperColor === 'pink' ? 'गुलाबी' : 'सफेद'})
@@ -392,7 +392,7 @@ export const PamphletPreview: React.FC<PamphletPreviewProps> = ({
                           </span>
                           <div className="flex items-center justify-between gap-1 mt-0.5">
                             <span className="text-[10px] text-neutral-700 font-bold font-devanagari">
-                              (वार्ड पंच प्रत्याशी)
+                              ({data.candidatePostTitle || 'वार्ड पंच'} प्रत्याशी)
                             </span>
                             {!isPrintView && !isExportNode && (
                               <button

@@ -34,6 +34,7 @@ export const DEFAULT_PAMPHLET_DATA: PamphletData = {
 
   // Candidate Name
   candidateName: 'संगीता / लालशंकर डाबी',
+  candidatePostTitle: 'वार्ड पंच',
   candidateNameSize: 28,
   candidateNameOffsetX: 0,
   candidateNameOffsetY: 0,
