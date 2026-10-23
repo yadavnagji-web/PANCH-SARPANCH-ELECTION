@@ -5,6 +5,7 @@ import { PamphletPreview } from './components/PamphletPreview.tsx';
 import { EditorPanel } from './components/EditorPanel.tsx';
 import { ChunavChinhModal } from './components/ChunavChinhModal.tsx';
 import { UserManualModal } from './components/UserManualModal.tsx';
+import { SavedProjectsModal, SavedProject } from './components/SavedProjectsModal.tsx';
 import {
   Printer,
   Download,
@@ -21,6 +22,8 @@ import {
   Lock,
   Unlock,
   RefreshCw,
+  Save,
+  FolderOpen,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { exportElementAsImage } from './utils/exportImage.ts';
@@ -32,6 +35,7 @@ import {
 } from './utils/pdfGenerator.ts';
 
 const STORAGE_KEY = 'wardpanch_pamphlet_data_v4';
+const STORAGE_KEY_SAVED_PROJECTS = 'wardpanch_saved_projects_v1';
 
 export default function App() {
   const [data, setData] = useState<PamphletData>(() => {
@@ -45,6 +49,21 @@ export default function App() {
     }
     return DEFAULT_PAMPHLET_DATA;
   });
+
+  // Saved Design Projects State
+  const [savedProjects, setSavedProjects] = useState<SavedProject[]>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY_SAVED_PROJECTS);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {
+      console.error('Could not parse saved projects', e);
+    }
+    return [];
+  });
+
+  const [isSavedProjectsModalOpen, setIsSavedProjectsModalOpen] = useState(false);
 
   const [zoomScale, setZoomScale] = useState<number>(1);
   const [isReferenceModalOpen, setIsReferenceModalOpen] = useState(false);
@@ -63,7 +82,7 @@ export default function App() {
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const exportContainerRef = useRef<HTMLDivElement>(null);
 
-  // Sync to localStorage
+  // Sync current data to localStorage
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -71,6 +90,61 @@ export default function App() {
       console.warn('Could not save to localStorage', e);
     }
   }, [data]);
+
+  // Sync saved projects to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_SAVED_PROJECTS, JSON.stringify(savedProjects));
+    } catch (e) {
+      console.warn('Could not save projects to localStorage', e);
+    }
+  }, [savedProjects]);
+
+  // Project Save & Load Handlers
+  const handleSaveCurrentProject = (customTitle?: string) => {
+    const candidate = data.candidateName.trim() || 'उम्मीदवार';
+    const panchayat = data.gramPanchayatName.trim() || 'ग्राम पंचायत';
+    const title = customTitle || `${candidate} - ${panchayat}`;
+
+    const newProject: SavedProject = {
+      id: `proj_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      title,
+      candidateName: candidate,
+      gramPanchayatName: panchayat,
+      wardText: data.wardNumberText || '',
+      symbolName: data.symbolNameText || '',
+      data: JSON.parse(JSON.stringify(data)),
+      updatedAt: Date.now(),
+    };
+
+    setSavedProjects((prev) => [newProject, ...prev.filter((p) => p.id !== newProject.id)]);
+    setSavedAlert(true);
+    setPrintFeedback(`💾 '${title}' को एडिट करने योग्य मोड में सेव कर लिया गया है!`);
+    try {
+      confetti({ particleCount: 40, spread: 50, origin: { y: 0.6 } });
+    } catch (_) {}
+    setTimeout(() => setSavedAlert(false), 2500);
+  };
+
+  const handleLoadProject = (project: SavedProject) => {
+    if (project.data) {
+      setData(project.data);
+      setIsLocked(false);
+      setLockedSnapshotUrl(null);
+      setPrintFeedback(`✏️ '${project.title}' को एडिट करने हेतु लोड कर दिया गया है!`);
+      try {
+        confetti({ particleCount: 30, spread: 40, origin: { y: 0.6 } });
+      } catch (_) {}
+    }
+  };
+
+  const handleDeleteProject = (id: string) => {
+    setSavedProjects((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const handleImportProjects = (imported: SavedProject[]) => {
+    setSavedProjects((prev) => [...imported, ...prev]);
+  };
 
   // Set standard A4 portrait print style for seamless WYSIWYG printing
   useEffect(() => {
@@ -305,7 +379,27 @@ export default function App() {
           </div>
 
           {/* Quick Header Actions */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+            {/* Save Current Design Button */}
+            <button
+              onClick={() => handleSaveCurrentProject()}
+              className="px-3 py-1.5 bg-linear-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 font-khand font-black text-sm rounded-lg shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+              title="इस पोस्टर डिज़ाइन को एडिट करने योग्य मोड में सेव करें"
+            >
+              <Save className="w-4 h-4 text-neutral-950" />
+              <span>💾 पोस्टर सेव करें</span>
+            </button>
+
+            {/* Saved Projects Gallery Button */}
+            <button
+              onClick={() => setIsSavedProjectsModalOpen(true)}
+              className="px-2.5 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-amber-300 hover:text-white rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors border border-neutral-700 font-khand text-sm cursor-pointer"
+              title="आपकी सेव की गई सभी डिज़ाइनें देखें व पुनः एडिट करें"
+            >
+              <FolderOpen className="w-4 h-4 text-amber-400" />
+              <span>📁 सेव लिस्ट ({savedProjects.length})</span>
+            </button>
+
             {/* User Manual Button in Hindi */}
             <button
               onClick={() => setIsManualModalOpen(true)}
@@ -413,6 +507,28 @@ export default function App() {
           {/* 1. PREVIEW CONTROL BAR WITH INSTANT LOCK, PRINT & DOWNLOADS */}
           <div className="bg-white p-2.5 sm:p-3 rounded-xl shadow-xs border border-neutral-200 flex items-center justify-between gap-3 flex-wrap preview-toolbar">
             <div className="flex items-center gap-2 flex-wrap">
+              {/* SAVE DESIGN BUTTON */}
+              <button
+                type="button"
+                onClick={() => handleSaveCurrentProject()}
+                className="px-3.5 py-2.5 bg-linear-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 rounded-xl font-khand font-black text-base flex items-center gap-1.5 shadow-md hover:shadow-lg transition-all cursor-pointer border border-amber-300"
+                title="वर्तमान पोस्टर को एडिट करने योग्य फ़ाइल के रूप में सेव करें"
+              >
+                <Save className="w-4 h-4 text-neutral-950" />
+                <span>💾 डिज़ाइन सेव करें</span>
+              </button>
+
+              {/* SAVED PROJECTS GALLERY BUTTON */}
+              <button
+                type="button"
+                onClick={() => setIsSavedProjectsModalOpen(true)}
+                className="px-3 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl font-khand font-bold text-sm flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                title="आपकी सेव की गई सभी डिज़ाइनें देखें"
+              >
+                <FolderOpen className="w-4 h-4 text-amber-400" />
+                <span>📁 सेव लिस्ट ({savedProjects.length})</span>
+              </button>
+
               {/* LOCK BUTTON (Requested strictly by user) */}
               {isLocked ? (
                 <div className="flex items-center gap-1.5 bg-emerald-600 text-white px-3 py-2 rounded-xl font-khand font-bold text-sm shadow-md border border-emerald-400">
@@ -897,6 +1013,18 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* 8. SAVED PROJECTS EDITABLE GALLERY MODAL */}
+      <SavedProjectsModal
+        isOpen={isSavedProjectsModalOpen}
+        onClose={() => setIsSavedProjectsModalOpen(false)}
+        savedProjects={savedProjects}
+        onLoadProject={handleLoadProject}
+        onDeleteProject={handleDeleteProject}
+        onImportProjects={handleImportProjects}
+        onSaveCurrentProject={handleSaveCurrentProject}
+        currentCandidateName={data.candidateName}
+      />
     </div>
   );
 }

@@ -349,16 +349,19 @@ export const PamphletPreview: React.FC<PamphletPreviewProps> = ({
             </div>
 
             {/* Dynamically Generated Rows (each row flex-1 so all vertical space is completely filled) */}
-            <div className="flex-1 flex flex-col divide-y divide-current min-h-0">
-              {rows.map((rowNum) => {
+            <div className="flex-1 flex flex-col min-h-0">
+              {rows.map((rowNum, idx) => {
                 const isCandidateRow = rowNum === candidateRowIndex;
+                const isLastRow = idx === rows.length - 1;
 
                 return (
                   <div
                     key={rowNum}
-                    className={`grid grid-cols-12 items-center transition-all ${
+                    className={`grid grid-cols-12 items-center transition-all overflow-hidden ${
+                      !isLastRow ? (isCandidateRow ? 'border-b-2 border-current' : 'border-b border-current') : ''
+                    } ${
                       isCandidateRow
-                        ? 'flex-[1.8] min-h-[85px] bg-amber-50/50 font-bold border-y-2 border-current shadow-xs relative'
+                        ? 'flex-[1.8] min-h-[85px] bg-amber-50/50 font-bold'
                         : 'flex-1 min-h-[40px] bg-white text-neutral-400'
                     }`}
                   >
@@ -366,7 +369,7 @@ export const PamphletPreview: React.FC<PamphletPreviewProps> = ({
                     <div
                       className={`col-span-2 text-center border-r border-current flex items-center justify-center self-stretch h-full ${
                         isCandidateRow
-                          ? 'text-3xl sm:text-4xl font-black text-neutral-950 bg-neutral-100'
+                          ? 'text-3xl sm:text-4xl font-black text-neutral-950 bg-neutral-100/90'
                           : 'text-sm font-bold text-neutral-800'
                       }`}
                     >
@@ -458,7 +461,7 @@ export const PamphletPreview: React.FC<PamphletPreviewProps> = ({
 
               {/* Optional NOTA Row */}
               {data.showNotaRow && (
-                <div className="grid grid-cols-12 items-center min-h-[28px] bg-neutral-50 border-t border-current text-[11px] font-bold text-neutral-700 shrink-0">
+                <div className="grid grid-cols-12 items-center min-h-[28px] bg-neutral-50 border-t-2 border-current text-[11px] font-bold text-neutral-700 shrink-0">
                   <div className="col-span-2 text-center border-r border-current py-0.5 font-black">NOTA</div>
                   <div className="col-span-5 px-2 border-r border-current py-0.5">नोटा (इनमें से कोई नहीं)</div>
                   <div className="col-span-3 border-r border-current text-center font-black text-neutral-600 py-0.5">
