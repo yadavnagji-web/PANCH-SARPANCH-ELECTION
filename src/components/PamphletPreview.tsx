@@ -344,8 +344,7 @@ export const PamphletPreview: React.FC<PamphletPreviewProps> = ({
             <div className="grid grid-cols-12 bg-neutral-200/90 border-b border-current text-[11px] font-bold text-center py-0.5 shrink-0 uppercase">
               <div className="col-span-2 border-r border-current">क. सं.</div>
               <div className="col-span-5 border-r border-current">अभ्यर्थी का नाम</div>
-              <div className="col-span-3 border-r border-current">चुनाव चिन्ह</div>
-              <div className="col-span-2">मतदान मुहर</div>
+              <div className="col-span-5">चुनाव चिन्ह एवं मतदान मुहर</div>
             </div>
 
             {/* Dynamically Generated Rows (each row flex-1 so all vertical space is completely filled) */}
@@ -412,47 +411,47 @@ export const PamphletPreview: React.FC<PamphletPreviewProps> = ({
                       )}
                     </div>
 
-                    {/* Column 3: Election Symbol (Moveable & Resizable) */}
+                    {/* Merged Column 3 & 4: Election Symbol + Voting Stamp (No vertical dividing line) */}
                     <div
                       onClick={() => isCandidateRow && onOpenSymbolModal && onOpenSymbolModal()}
-                      className={`col-span-3 border-r border-current self-stretch h-full flex items-center justify-center p-0.5 ${
+                      className={`col-span-5 self-stretch h-full flex items-center justify-around px-2 p-0.5 ${
                         isCandidateRow ? 'cursor-pointer hover:bg-amber-100/40' : ''
                       }`}
                       title={isCandidateRow ? 'चिन्ह बदलने के लिए क्लिक करें' : ''}
                     >
                       {isCandidateRow ? (
-                        <div
-                          className="flex flex-col items-center justify-center"
-                          style={{
-                            transform: `translate(${data.tableSymbolOffsetX || 0}px, ${data.tableSymbolOffsetY || 0}px)`,
-                          }}
-                        >
-                          {renderSymbolGraphic(data.tableSymbolSize || 64)}
-                          <span className="text-[10px] font-bold text-neutral-900 mt-0.5 leading-tight">
-                            {data.symbolNameText}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="w-6 h-6 rounded-full border border-dashed border-neutral-200" />
-                      )}
-                    </div>
+                        <>
+                          <div
+                            className="flex flex-col items-center justify-center"
+                            style={{
+                              transform: `translate(${data.tableSymbolOffsetX || 0}px, ${data.tableSymbolOffsetY || 0}px)`,
+                            }}
+                          >
+                            {renderSymbolGraphic(data.tableSymbolSize || 64)}
+                            <span className="text-[10px] font-bold text-neutral-900 mt-0.5 leading-tight">
+                              {data.symbolNameText}
+                            </span>
+                          </div>
 
-                    {/* Column 4: Stamp / Muhr (Optional) */}
-                    <div className="col-span-2 self-stretch h-full flex items-center justify-center p-0.5 bg-neutral-50/50">
-                      {isCandidateRow && data.showStampMark ? (
-                        <div
-                          style={{
-                            transform: `translate(${data.stampOffsetX || 0}px, ${data.stampOffsetY || 0}px)`,
-                          }}
-                        >
-                          <SwastikStamp
-                            size={data.stampSize || 52}
-                            color={themeClasses.stampColor}
-                            rotation={-6}
-                          />
-                        </div>
+                          {data.showStampMark && (
+                            <div
+                              style={{
+                                transform: `translate(${data.stampOffsetX || 0}px, ${data.stampOffsetY || 0}px)`,
+                              }}
+                            >
+                              <SwastikStamp
+                                size={data.stampSize || 52}
+                                color={themeClasses.stampColor}
+                                rotation={-6}
+                              />
+                            </div>
+                          )}
+                        </>
                       ) : (
-                        <div className="w-5 h-5 rounded-full border border-neutral-300 opacity-20" />
+                        <div className="w-full flex items-center justify-around opacity-30">
+                          <div className="w-6 h-6 rounded-full border border-dashed border-neutral-300" />
+                          <div className="w-5 h-5 rounded-full border border-neutral-300" />
+                        </div>
                       )}
                     </div>
                   </div>
@@ -464,10 +463,10 @@ export const PamphletPreview: React.FC<PamphletPreviewProps> = ({
                 <div className="grid grid-cols-12 items-center min-h-[28px] bg-neutral-50 border-t-2 border-current text-[11px] font-bold text-neutral-700 shrink-0">
                   <div className="col-span-2 text-center border-r border-current py-0.5 font-black">NOTA</div>
                   <div className="col-span-5 px-2 border-r border-current py-0.5">नोटा (इनमें से कोई नहीं)</div>
-                  <div className="col-span-3 border-r border-current text-center font-black text-neutral-600 py-0.5">
-                    ✕
+                  <div className="col-span-5 text-center flex items-center justify-around font-black text-neutral-600 py-0.5">
+                    <span>✕</span>
+                    <span className="opacity-30">◯</span>
                   </div>
-                  <div className="col-span-2 text-center opacity-30 py-0.5">◯</div>
                 </div>
               )}
             </div>
