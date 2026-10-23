@@ -335,9 +335,8 @@ export const PamphletPreview: React.FC<PamphletPreviewProps> = ({
                   (मतपत्र: {data.ballotPaperColor === 'pink' ? 'गुलाबी' : 'सफेद'})
                 </span>
               </div>
-              <div className="text-right text-xs text-neutral-700 whitespace-nowrap">
-                <span>वार्ड सं. {data.wardNumberText?.replace(/[^0-9]/g, '') || candidateRowIndex}</span>
-              </div>
+              {/* Right corner kept empty as requested */}
+              <div />
             </div>
 
             {/* Table Column Titles */}
